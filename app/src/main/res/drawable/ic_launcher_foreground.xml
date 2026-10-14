@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Montagne et tracé de randonnée, zone sûre 66 dp centrée. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M30,72 L47,44 L56,57 L63,48 L78,72 Z" />
+    <path android:fillColor="#FF1B7F4A"
+        android:pathData="M47,44 L42,52 L47,50 L51,54 Z" />
+    <path android:strokeColor="#FFFFD54F" android:strokeWidth="3"
+        android:strokeLineCap="round" android:fillColor="#00000000"
+        android:pathData="M34,80 C44,76 50,82 58,78 C66,74 70,80 76,77" />
+</vector>

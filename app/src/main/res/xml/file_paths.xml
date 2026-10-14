@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Photos prises avec l'appareil photo (stockage privé de l'application). -->
+    <files-path name="photos" path="photos/" />
+    <!-- Fichiers temporaires partagés : GPX exportés. -->
+    <cache-path name="exports" path="exports/" />
+</paths>

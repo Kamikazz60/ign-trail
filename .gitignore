@@ -1,0 +1,14 @@
+*.iml
+.cxx/
+.gradle/
+.idea/
+.kotlin/
+apk/
+build/
+captures/
+local.properties
+
+# Clés de signature (gardées hors du projet, par sécurité)
+*.jks
+*.keystore
+signature.properties
