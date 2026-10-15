@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -79,11 +80,14 @@ class MapViewModel(
      * ou un guidage est en cours. Une position déjà vue (même heure) n'est traitée qu'une fois.
      */
     suspend fun collectLocation() {
+        val arbiter = FixArbiter(SERVICE_PRIORITY_MS)
         merge(
-            locationSource.updates(LOCATION_INTERVAL_MS).catch { _state.update { s -> s.copy(gpsStatus = GpsStatus.ERROR) } },
-            serviceFixes.filterNotNull(),
-        ).collect { fix ->
-            if (fix.timeMillis > (_state.value.fix?.timeMillis ?: Long.MIN_VALUE)) onFix(fix)
+            locationSource.updates(LOCATION_INTERVAL_MS)
+                .catch { _state.update { s -> s.copy(gpsStatus = GpsStatus.ERROR) } }
+                .map { it to false },
+            serviceFixes.filterNotNull().map { it to true },
+        ).collect { (fix, fromService) ->
+            if (arbiter.accept(fix.timeMillis, fromService)) onFix(fix)
         }
     }
 
@@ -131,6 +135,9 @@ class MapViewModel(
     companion object {
         private const val LOCATION_INTERVAL_MS = 1_000L
         private const val SAVE_POSITION_EVERY_MS = 30_000L
+
+        /** Sans position du service depuis ce délai, la carte reprend son propre abonnement. */
+        private const val SERVICE_PRIORITY_MS = 5_000L
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

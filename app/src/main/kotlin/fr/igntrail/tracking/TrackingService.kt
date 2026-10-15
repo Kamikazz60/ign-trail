@@ -99,7 +99,7 @@ class TrackingService : Service() {
             locationJob = scope.launch {
                 // Fréquence adaptée à la vitesse (§17) : une position par seconde à pied,
                 // deux au-delà de 30 km/h pour suivre fidèlement les virages (lacets à vélo).
-                locationInterval.flatMapLatest { appContainer.locationSource.updates(it) }
+                locationInterval.flatMapLatest { appContainer.trackingLocationSource.updates(it) }
                     .catch { Log.e(TAG, "Positions indisponibles", it) }
                     .collect { raw ->
                         adaptInterval(raw.speedMps)

@@ -17,7 +17,10 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
-/** Récepteur GNSS natif, utilisé lorsque les Google Play Services sont absents. */
+/**
+ * Récepteur GNSS natif (satellites seuls) : enregistrement et guidage, et carte lorsque les
+ * Google Play Services sont absents.
+ */
 @SuppressLint("MissingPermission")
 class PlatformLocationSource(private val context: Context) : LocationSource {
     private val manager: LocationManager = requireNotNull(context.getSystemService())

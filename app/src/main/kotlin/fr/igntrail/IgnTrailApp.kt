@@ -57,7 +57,11 @@ class IgnTrailApp : Application() {
 
 /** Injection de dépendances manuelle (voir décision technique dans PROJECT_STATE.md). */
 class AppContainer(context: Context) {
+    /** Carte : position rapide au démarrage (fused : satellites, Wi-Fi, antennes). */
     val locationSource: LocationSource = LocationSources.create(context)
+
+    /** Enregistrement et guidage : satellites uniquement (voir [LocationSources.createSatellite]). */
+    val trackingLocationSource: LocationSource = LocationSources.createSatellite(context)
 
     /**
      * Dernière position reçue par le service d'enregistrement / guidage, rediffusée à la carte :

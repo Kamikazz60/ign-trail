@@ -1,6 +1,6 @@
 # PROJECT_STATE — IGN Trail
 
-Dernière mise à jour : 15/10/2026 (version 1.0.1)
+Dernière mise à jour : 15/10/2026 (version 1.0.2, à valider sur téléphone)
 
 ## Avancement
 
@@ -340,3 +340,20 @@ Corrections (`TrackRecorder`) :
 
 2 tests ajoutés (forêt à vélo, positions décalées précises) ; 123 tests, 0 échec. Les fiches des sorties déjà
 enregistrées sont recalculées avec ces règles à leur ouverture (mesures brutes conservées).
+
+## Tracé décalé à travers les maisons (version 1.0.2, `apk/IGN-Trail-1.0.2.apk`, à valider sur téléphone)
+
+Même trace, après le bois : tracé parallèle aux rues mais décalé de 30 à 50 m, à travers les maisons, jusqu'à
+l'arrivée. Décalage régulier typique de positions calculées par Wi-Fi / antennes : le mode « fused » des services
+Google les fournit quand les satellites sont mal captés.
+
+Correction :
+- **Enregistrement et guidage en satellites seuls** (`LocationSources.createSatellite` → `PlatformLocationSource`,
+  fournisseur GPS d'Android). Sans satellite, aucune position : le moteur coupe le tracé (1.0.1) au lieu d'en
+  inventer un. La carte garde le mode « fused » avant le départ (position rapide).
+- Pendant une sortie, la carte suit les positions de l'enregistrement et ignore les siennes (`FixArbiter`, testé),
+  pour que le point ne saute pas entre positions satellites et Wi-Fi.
+
+127 tests, 0 échec. **Non vérifié sur émulateur** : l'émulateur est devenu inutilisable sur ce PC (interface
+système bloquée, services Android absents après redémarrage). Hypothèse Wi-Fi à confirmer avec les mesures brutes
+(précision de chaque point) d'une sauvegarde.
