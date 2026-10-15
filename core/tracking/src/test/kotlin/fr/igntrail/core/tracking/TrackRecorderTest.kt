@@ -363,4 +363,36 @@ class TrackRecorderTest {
         val max = r.stats().maxSpeedMps * 3.6
         assertTrue("vitesse max $max km/h (90 annoncés, 54 réels)", max < 75.0)
     }
+
+    /** Plus grand écart entre deux points consécutifs d'un même segment (ligne droite dessinée). */
+    private fun longestDrawnStep(r: TrackRecorder): Double =
+        r.segments().maxOf { seg -> seg.zipWithNext { a, b -> fr.igntrail.core.geo.GeoMath.distanceM(a, b) }.maxOrNull() ?: 0.0 }
+
+    @Test
+    fun `perte de signal en forêt à vélo - pas de chemin inventé ni de détour fictif (retour terrain)`() {
+        // 30 km/h ; 59 s sans signal sous les arbres ; au retour, 7 s de positions décalées
+        // de 120 m (précision annoncée 30 m), nouveau trou de 15 s, puis signal normal.
+        val track = SyntheticTrack().walk(120, 8.3, bearingDeg = 20.0, noiseM = 4.0, accuracyM = 8f)
+            .silentMove(59, 8.3, bearingDeg = 20.0)
+            .walkOffset(7, 8.3, 20.0, offsetM = 120.0, offsetBearingDeg = 300.0, accuracyM = 30f)
+            .silentMove(15, 8.3, bearingDeg = 20.0)
+            .walk(120, 8.3, bearingDeg = 20.0, noiseM = 4.0, accuracyM = 8f)
+        val r = TrackRecorder(TrackingParams.forActivity(ActivityType.OTHER, 0), T0)
+        r.feed(track.fixes)
+        val worst = r.segments().flatten().maxOf { deviation(it, track.truePath) }
+        assertTrue("écart maximal au vrai chemin : ${"%.0f".format(worst)} m", worst < 25.0)
+        assertTrue("ligne droite de ${"%.0f".format(longestDrawnStep(r))} m", longestDrawnStep(r) < 40.0)
+        assertEquals(track.trueDistanceM, r.stats().distanceM, track.trueDistanceM * 0.05)
+    }
+
+    @Test
+    fun `positions décalées mais précises sans coupure - rejetées grâce au Doppler`() {
+        val track = SyntheticTrack().walk(120, 8.3, bearingDeg = 20.0, noiseM = 4.0, accuracyM = 8f)
+            .walkOffset(4, 8.3, 20.0, offsetM = 120.0, offsetBearingDeg = 300.0, accuracyM = 10f)
+            .walk(120, 8.3, bearingDeg = 20.0, noiseM = 4.0, accuracyM = 8f)
+        val r = TrackRecorder(TrackingParams.forActivity(ActivityType.OTHER, 0), T0)
+        r.feed(track.fixes)
+        val worst = r.segments().flatten().maxOf { deviation(it, track.truePath) }
+        assertTrue("écart maximal au vrai chemin : ${"%.0f".format(worst)} m", worst < 25.0)
+    }
 }

@@ -68,6 +68,22 @@ class SyntheticTrack(seed: Long = 42, start: GeoPoint = GeoPoint(45.9, 6.87), st
         return this
     }
 
+    /**
+     * Déplacement réel, mais positions mesurées décalées de [offsetM] vers [offsetBearingDeg]
+     * (retour du signal sous les arbres) ; la vitesse Doppler, elle, reste juste.
+     */
+    fun walkOffset(seconds: Int, speedMps: Double, bearingDeg: Double, offsetM: Double, offsetBearingDeg: Double, accuracyM: Float): SyntheticTrack {
+        repeat(seconds) {
+            time += 1000
+            position = GeoMath.offset(position, bearingDeg, speedMps)
+            truePath += position
+            trueDistanceM += speedMps
+            val p = GeoMath.offset(position, offsetBearingDeg, offsetM)
+            fixes += LocationFix(p.latitude, p.longitude, time, accuracyM, altitude, 4f, speedMps.toFloat(), bearingDeg.toFloat(), 10f, LocationSourceType.FUSED)
+        }
+        return this
+    }
+
     /** Une mesure aberrante isolée à [jumpM] mètres. */
     fun spike(jumpM: Double): SyntheticTrack {
         time += 1000

@@ -34,6 +34,8 @@ class TrackRecorder(private val params: TrackingParams, val startMillis: Long) {
     private val segmentTimes = mutableListOf<AppendOnlyList<TimedPoint>>()
 
     private var lastGoodFixMillis = startMillis
+    private var reacquireArmedFor = Long.MIN_VALUE
+    private var reacquireUntil = Long.MIN_VALUE
     private var stationarySince: Long? = null
     private var autoPauseAnchor: GeoPoint? = null
     private var resumeCandidates = 0
@@ -91,22 +93,41 @@ class TrackRecorder(private val params: TrackingParams, val startMillis: Long) {
         val accuracy = fix.horizontalAccuracyM
         if (accuracy == null || accuracy > params.maxAccuracyM) return PointQuality.LOW_ACCURACY
 
+        // Retour du signal après une coupure (sous les arbres, entre des immeubles) : les
+        // premières positions sont souvent fausses de plusieurs dizaines de mètres. Pendant
+        // un moment, seules les mesures précises sont acceptées.
+        if (lastAccepted != null && t - lastGoodFixMillis > REACQUIRE_GAP_MS && reacquireArmedFor != lastGoodFixMillis) {
+            reacquireArmedFor = lastGoodFixMillis
+            reacquireUntil = t + REACQUIRE_PROBATION_MS
+        }
+        if (t < reacquireUntil && accuracy > REACQUIRE_MAX_ACCURACY_M) return PointQuality.LOW_ACCURACY
+
         val previousGoodFix = lastGoodFixMillis
         val previous = lastAccepted
         if (previous == null || startNewSegment || !filter.isInitialized) {
             lastGoodFixMillis = t
             return startSegment(fix)
         }
-        if (t - previousGoodFix > params.gapMs) {
-            // Perte de signal prolongée : on ne relie pas les deux positions (§5.3).
-            // En pause automatique, l'utilisateur a forcément repris la marche entre-temps.
-            if (state == RecordingState.AUTO_PAUSED) state = RecordingState.MOVING
-            lastGoodFixMillis = t
-            return startSegment(fix)
-        }
 
         // Courte perte de signal : les vitesses annoncées au retour sont peu fiables.
         if (t - previousGoodFix > DOPPLER_MAX_SAMPLE_GAP_MS) maxSpeedSettledAt = t + SETTLE_AFTER_GAP_MS
+
+        // Perte de signal pendant un déplacement : relier les deux bouts par une ligne droite
+        // inventerait un chemin (à travers bois, immeubles…). On coupe le tracé, mais la
+        // distance en ligne droite, minimum certain du trajet réel, reste comptée.
+        // Perte de signal prolongée (§5.3) : jamais reliée non plus.
+        val gap = t - previousGoodFix
+        if (gap > REACQUIRE_GAP_MS) {
+            val chord = GeoMath.distanceM(GeoPoint(fix.latitude, fix.longitude), previous)
+            if (chord > GAP_LINK_MAX_M || gap > params.gapMs) {
+                val plausible = chord / (gap / 1000.0) <= params.maxSpeedMps
+                if (chord > GAP_LINK_MAX_M && gap <= CHORD_DISTANCE_MAX_GAP_MS && plausible) distanceM += chord
+                // En pause automatique, l'utilisateur a forcément repris la marche entre-temps.
+                if (state == RecordingState.AUTO_PAUSED) state = RecordingState.MOVING
+                lastGoodFixMillis = t
+                return startSegment(fix)
+            }
+        }
 
         // Saut incompatible avec la vitesse maximale de l'activité : point aberrant.
         val dt = (t - previousGoodFix).coerceAtLeast(1) / 1000.0
@@ -115,7 +136,11 @@ class TrackRecorder(private val params: TrackingParams, val startMillis: Long) {
         // Saut confirmé par la vitesse mesurée par la puce GPS : déplacement réel (voiture,
         // vélo…), pas un point aberrant, même au-delà de la vitesse prévue pour l'activité.
         val dopplerConfirms = !dopplerUnreliable && (fix.speedMps ?: 0f) >= implied * 0.7 && (fix.speedMps ?: 0f) > 2f
-        if (implied > params.maxSpeedMps && !dopplerConfirms) {
+        // Saut bien plus rapide que la vitesse mesurée par la puce : position fausse, même si
+        // elle reste plausible pour l'activité (vélo à 30 km/h « téléporté » à 90 km/h).
+        val doppler = fix.speedMps?.takeIf { !dopplerUnreliable && it >= 0.5f }
+        val dopplerContradicts = doppler != null && implied > doppler * DOPPLER_JUMP_FACTOR + DOPPLER_JUMP_MARGIN_MPS
+        if ((implied > params.maxSpeedMps && !dopplerConfirms) || dopplerContradicts) {
             consecutiveOutliers++
             // Plusieurs sauts cohérents : c'est la position précédente qui était fausse.
             if (consecutiveOutliers < OUTLIER_RESET_COUNT) return PointQuality.OUTLIER
@@ -398,6 +423,20 @@ class TrackRecorder(private val params: TrackingParams, val startMillis: Long) {
 
         /** Horloge GPS et horloge système peuvent différer d'une à deux secondes. */
         private const val OUT_OF_ORDER_TOLERANCE_MS = 2_000L
+
+        /** Au-delà de ce silence, le retour du signal est traité avec méfiance. */
+        private const val REACQUIRE_GAP_MS = 10_000L
+        private const val REACQUIRE_PROBATION_MS = 30_000L
+        private const val REACQUIRE_MAX_ACCURACY_M = 20f
+
+        /** Au-delà, deux positions séparées par une perte de signal ne sont pas reliées. */
+        private const val GAP_LINK_MAX_M = 50.0
+
+        /** Au-delà, la ligne droite n'a plus de sens (voiture, transport…) : distance non comptée. */
+        private const val CHORD_DISTANCE_MAX_GAP_MS = 180_000L
+
+        private const val DOPPLER_JUMP_FACTOR = 1.5f
+        private const val DOPPLER_JUMP_MARGIN_MPS = 8f
 
         /**
          * Recalcule une session à partir des mesures brutes et des événements

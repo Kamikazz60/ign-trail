@@ -1,6 +1,6 @@
 # PROJECT_STATE — IGN Trail
 
-Dernière mise à jour : 14/10/2026 (Phase 7, version 1.0.0)
+Dernière mise à jour : 15/10/2026 (version 1.0.1)
 
 ## Avancement
 
@@ -321,3 +321,22 @@ Limites connues :
 
 Prochaine étape : recette sur téléphone (`docs/07_TESTS_PHASE7.md`), puis corrections éventuelles. Les fonctions V2
 (mode fantôme, comparaison, routage hors ligne) restent hors périmètre.
+
+## Retour terrain du 15/10/2026 : chemin inventé en forêt (version 1.0.1, `apk/IGN-Trail-1.0.1.apk`)
+
+Trace analysée (activité personnalisée, ~30-45 km/h, traversée du bois du Fay) : 59 s sans signal sous les
+arbres, reliées par une **ligne droite de 470 m à travers bois** (le seuil de coupure était de 60 s) ; au retour
+du signal, 7 s de positions décalées vers le nord-ouest (80-95 km/h apparents, acceptés car < 90 km/h, la limite
+de l'activité « Autre »), puis 15 s de silence et retour sur le chemin.
+
+Corrections (`TrackRecorder`) :
+- **Pas de ligne droite à travers une perte de signal** : après plus de 10 s sans mesure, si l'on s'est déplacé
+  de plus de 50 m, le tracé est coupé. La distance en ligne droite (minimum certain) reste comptée si la perte
+  dure moins de 3 min et que la vitesse correspondante est plausible.
+- **Période d'essai au retour du signal** : pendant 30 s après une coupure de plus de 10 s, seules les mesures
+  précises à 20 m ou mieux sont acceptées.
+- **Contrôle par la vitesse Doppler** : un saut plus rapide que 1,5 × la vitesse mesurée par la puce + 8 m/s est
+  rejeté, même s'il reste sous la vitesse maximale de l'activité.
+
+2 tests ajoutés (forêt à vélo, positions décalées précises) ; 123 tests, 0 échec. Les fiches des sorties déjà
+enregistrées sont recalculées avec ces règles à leur ouverture (mesures brutes conservées).
