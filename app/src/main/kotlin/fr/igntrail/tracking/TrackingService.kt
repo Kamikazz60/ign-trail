@@ -11,13 +11,10 @@ import fr.igntrail.appContainer
 import fr.igntrail.navigation.NavigationStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
@@ -28,21 +25,10 @@ import kotlinx.coroutines.launch
  * Il ne contient aucune logique d'enregistrement : il reçoit les positions et les
  * transmet au [RecordingManager], et tient la notification à jour.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 class TrackingService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var locationJob: Job? = null
     private var barometerJob: Job? = null
-    private val locationInterval = MutableStateFlow(LOCATION_INTERVAL_MS)
-
-    /** Hystérésis : passage rapide au-dessus de 30 km/h, retour sous 20 km/h. */
-    private fun adaptInterval(speedMps: Float?) {
-        val speed = speedMps ?: return
-        when {
-            speed > FAST_ABOVE_MPS -> locationInterval.value = FAST_INTERVAL_MS
-            speed < NORMAL_BELOW_MPS -> locationInterval.value = LOCATION_INTERVAL_MS
-        }
-    }
 
     /** Dernière pression mesurée et son heure (le baromètre et le GPS ne sont pas synchrones). */
     @Volatile
@@ -97,12 +83,12 @@ class TrackingService : Service() {
         }
         if (locationJob?.isActive != true) {
             locationJob = scope.launch {
-                // Fréquence adaptée à la vitesse (§17) : une position par seconde à pied,
-                // deux au-delà de 30 km/h pour suivre fidèlement les virages (lacets à vélo).
-                locationInterval.flatMapLatest { appContainer.trackingLocationSource.updates(it) }
+                // Fréquence fixe, un seul abonnement pour toute la sortie. Changer de fréquence en
+                // route oblige à se réabonner au GPS, ce qui coupe les positions 15 s (retour
+                // terrain du 15/10/2026) ; et la puce n'en fournit de toute façon qu'une par seconde.
+                appContainer.trackingLocationSource.updates(LOCATION_INTERVAL_MS)
                     .catch { Log.e(TAG, "Positions indisponibles", it) }
                     .collect { raw ->
-                        adaptInterval(raw.speedMps)
                         val pressure = lastPressure?.takeIf { System.currentTimeMillis() - it.second < PRESSURE_MAX_AGE_MS }?.first
                         val fix = if (pressure != null) raw.copy(pressureHpa = pressure) else raw
                         appContainer.liveFix.value = fix
@@ -171,9 +157,6 @@ class TrackingService : Service() {
         const val ACTION_RESUME = "fr.igntrail.action.RESUME"
         const val ACTION_STOP_GUIDANCE = "fr.igntrail.action.STOP_GUIDANCE"
         private const val LOCATION_INTERVAL_MS = 1_000L
-        private const val FAST_INTERVAL_MS = 500L
-        private const val FAST_ABOVE_MPS = 8.3f
-        private const val NORMAL_BELOW_MPS = 5.5f
         private const val NOTIFICATION_REFRESH_MS = 15_000L
         private const val PRESSURE_MAX_AGE_MS = 5_000L
     }

@@ -1,6 +1,6 @@
 # PROJECT_STATE — IGN Trail
 
-Dernière mise à jour : 15/10/2026 (version 1.0.2, à valider sur téléphone)
+Dernière mise à jour : 15/10/2026 (version 1.0.3, à valider sur téléphone)
 
 ## Avancement
 
@@ -357,3 +357,17 @@ Correction :
 127 tests, 0 échec. **Non vérifié sur émulateur** : l'émulateur est devenu inutilisable sur ce PC (interface
 système bloquée, services Android absents après redémarrage). Hypothèse Wi-Fi à confirmer avec les mesures brutes
 (précision de chaque point) d'une sauvegarde.
+
+## Trous de 15 s sur le tracé (version 1.0.3, `apk/IGN-Trail-1.0.3.apk`, à valider sur téléphone)
+
+Analyse des mesures brutes (sauvegarde de l'utilisateur, deux trajets du 15/10) :
+- Matin, mode « fused » : précision médiane 17,6 m (22 m dans le bourg), jusqu'à 68 m → positions Wi-Fi, d'où le
+  tracé décalé. Confirme le choix de la 1.0.2.
+- Soir, satellites seuls (1.0.2) : précision médiane 5,9 m (jamais plus de 19 m), mais **14 trous de 15,0 s
+  exactement**, chacun au passage au-dessus de 30 km/h ou sous 20 km/h : le changement de fréquence (0.6.2) obligeait
+  à se réabonner au GPS, qui ne renvoie alors rien pendant 15 s. La puce ne fournit de toute façon qu'une position
+  par seconde (aucun intervalle de 0,5 s observé, dans aucun des deux modes).
+- En campagne, matin et soir sur la même route : 5,4 m d'écart médian.
+
+Correction : fréquence fixe d'une position par seconde, un seul abonnement GPS pour toute la sortie
+(`TrackingService`). 127 tests, 0 échec. Non vérifié sur émulateur (inutilisable sur ce PC).
