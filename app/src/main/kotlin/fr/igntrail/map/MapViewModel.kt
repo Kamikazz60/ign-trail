@@ -39,7 +39,7 @@ data class MapUiState(
 )
 
 /** Cadrage mémorisé pour le restaurer si la vue carte est recréée. */
-data class SavedCamera(val latitude: Double, val longitude: Double, val zoom: Double)
+data class SavedCamera(val latitude: Double, val longitude: Double, val zoom: Double, val bearing: Double = 0.0)
 
 class MapViewModel(
     private val locationSource: LocationSource,

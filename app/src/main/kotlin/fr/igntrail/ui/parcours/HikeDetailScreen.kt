@@ -74,6 +74,7 @@ import fr.igntrail.map.IgnMapController
 import fr.igntrail.map.OutingColors
 import fr.igntrail.ui.components.ElevationChart
 import fr.igntrail.ui.components.MapRoundButton
+import fr.igntrail.ui.components.NorthIndicator
 import fr.igntrail.ui.components.SpeedLegend
 import fr.igntrail.ui.format.Format
 import fr.igntrail.ui.poi.PhotoStrip
@@ -312,15 +313,25 @@ private fun FullTrackMap(
     onRefit: () -> Unit,
     onClose: () -> Unit,
 ) {
+    var map by remember { mutableStateOf<IgnMapController?>(null) }
+    var bearing by remember { mutableStateOf(0.0) }
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().navigationBarsPadding()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 IgnMap(
                     modifier = Modifier.fillMaxSize(),
-                    onMapReady = onReady,
+                    onMapReady = {
+                        map = it
+                        onReady(it)
+                    },
                     onUserGesture = {},
-                    onCameraMove = {},
+                    onCameraMove = { bearing = it.bearing },
                     onCameraIdle = {},
+                )
+                NorthIndicator(
+                    bearing = bearing,
+                    onClick = { map?.resetNorth() },
+                    modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 84.dp, end = 12.dp),
                 )
                 Row(
                     Modifier.statusBarsPadding().padding(12.dp).fillMaxWidth(),

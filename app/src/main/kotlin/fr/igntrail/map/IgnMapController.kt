@@ -12,6 +12,7 @@ import fr.igntrail.core.stats.SpeedThresholds
 import fr.igntrail.core.tracking.TimedPoint
 import fr.igntrail.data.settings.MapDisplaySettings
 import fr.igntrail.data.storage.Poi
+import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
@@ -33,8 +34,11 @@ class IgnMapController(val map: MapLibreMap) {
 
     init {
         map.uiSettings.apply {
-            // Nord toujours en haut (§3.3).
-            isRotateGesturesEnabled = false
+            // Rotation à deux doigts (choix de l'utilisateur du 16/10/2026, au lieu du nord
+            // toujours en haut du §3.3) ; seuil relevé pendant un zoom pour ne pas tourner par
+            // mégarde. Pas d'inclinaison 3D.
+            isRotateGesturesEnabled = true
+            isIncreaseRotateThresholdWhenScaling = true
             isTiltGesturesEnabled = false
             isCompassEnabled = false
             isLogoEnabled = false
@@ -146,8 +150,17 @@ class IgnMapController(val map: MapLibreMap) {
         )
     }
 
-    fun moveImmediately(latitude: Double, longitude: Double, zoom: Double) {
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(latitude, longitude), zoom))
+    fun moveImmediately(latitude: Double, longitude: Double, zoom: Double, bearing: Double = 0.0) {
+        map.moveCamera(
+            CameraUpdateFactory.newCameraPosition(
+                CameraPosition.Builder().target(LatLng(latitude, longitude)).zoom(zoom).bearing(bearing).build(),
+            ),
+        )
+    }
+
+    /** Appui sur la boussole : nord de nouveau en haut. */
+    fun resetNorth() {
+        map.easeCamera(CameraUpdateFactory.bearingTo(0.0), NORTH_RESET_MS)
     }
 
     /** Zoom par boutons : centré sur l'écran, sans toucher au mode de suivi. */
@@ -157,5 +170,6 @@ class IgnMapController(val map: MapLibreMap) {
 
     companion object {
         private const val CAMERA_ANIMATION_MS = 600
+        private const val NORTH_RESET_MS = 300
     }
 }

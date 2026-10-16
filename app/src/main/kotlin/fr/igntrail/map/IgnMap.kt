@@ -15,7 +15,8 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 
 /** Cadrage courant, pour l'échelle graphique et la sauvegarde. */
-data class CameraSnapshot(val latitude: Double, val longitude: Double, val zoom: Double)
+/** [bearing] : orientation de la carte en degrés (0 = nord en haut). */
+data class CameraSnapshot(val latitude: Double, val longitude: Double, val zoom: Double, val bearing: Double = 0.0)
 
 /**
  * Vue MapLibre intégrée à Compose. Les gestes de l'utilisateur sont signalés via
@@ -75,7 +76,7 @@ fun IgnMap(
 private fun MapLibreMap.snapshot(): CameraSnapshot {
     val position = cameraPosition
     val target = position.target
-    return CameraSnapshot(target?.latitude ?: 0.0, target?.longitude ?: 0.0, position.zoom)
+    return CameraSnapshot(target?.latitude ?: 0.0, target?.longitude ?: 0.0, position.zoom, position.bearing)
 }
 
 /** Relaye le cycle de vie Android vers la MapView (obligatoire pour MapLibre). */

@@ -1,6 +1,6 @@
 # PROJECT_STATE — IGN Trail
 
-Dernière mise à jour : 15/10/2026 (version 1.0.3, à valider sur téléphone)
+Dernière mise à jour : 16/10/2026 (version 1.0.4, à valider sur téléphone)
 
 ## Avancement
 
@@ -371,3 +371,18 @@ Analyse des mesures brutes (sauvegarde de l'utilisateur, deux trajets du 15/10) 
 
 Correction : fréquence fixe d'une position par seconde, un seul abonnement GPS pour toute la sortie
 (`TrackingService`). 127 tests, 0 échec. Non vérifié sur émulateur (inutilisable sur ce PC).
+
+## Rotation de la carte et boussole (version 1.0.4, `apk/IGN-Trail-1.0.4.apk`, à valider sur téléphone)
+
+Décision de l'utilisateur (16/10/2026), qui remplace le « nord toujours en haut » du §3.3 : retour d'un ami, le
+« N » fixe était pris pour une boussole et ne donnait pas le nord réel.
+- Rotation de la carte à deux doigts (seuil relevé pendant un zoom pour éviter les rotations involontaires ;
+  pas d'inclinaison 3D).
+- Le « N » devient une boussole de carte : il tourne avec la carte pour montrer où est le nord ; un appui remet le
+  nord en haut. Aussi sur la carte plein écran d'une sortie.
+- Orientation conservée quand la carte est recréée (changement d'onglet, rotation de l'écran).
+- La flèche de direction du point bleu et la sélection de zone hors ligne étaient déjà indépendantes de
+  l'orientation.
+
+Vérifié sur émulateur : boussole affichée (« nord en haut »), appui sans erreur, carte et position GPS OK. La
+rotation à deux doigts n'est pas testable sur l'émulateur (un seul doigt simulé) : à vérifier sur téléphone.

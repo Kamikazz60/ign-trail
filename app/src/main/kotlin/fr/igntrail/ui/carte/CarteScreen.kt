@@ -357,12 +357,12 @@ fun CarteScreen(
                 val saved = viewModel.savedCamera
                 if (saved != null) viewModel.onMapRecreated()
                 val start = saved ?: FRANCE
-                map.moveImmediately(start.latitude, start.longitude, start.zoom)
+                map.moveImmediately(start.latitude, start.longitude, start.zoom, start.bearing)
                 controller = map
             },
             onUserGesture = viewModel::onUserGesture,
             onCameraMove = { camera = it },
-            onCameraIdle = { viewModel.onCameraIdle(SavedCamera(it.latitude, it.longitude, it.zoom)) },
+            onCameraIdle = { viewModel.onCameraIdle(SavedCamera(it.latitude, it.longitude, it.zoom, it.bearing)) },
             onMapClick = onPlanTap,
             onMapLongClick = { pos ->
                 if (planner == null && !selectingArea) {
@@ -456,7 +456,7 @@ fun CarteScreen(
                     }
                 })
             }
-            NorthIndicator()
+            NorthIndicator(bearing = camera?.bearing ?: 0.0, onClick = { controller?.resetNorth() })
             MapRoundButton(
                 icon = if (state.following) Icons.Filled.MyLocation else Icons.Filled.GpsFixed,
                 contentDescription = "Recentrer sur ma position",

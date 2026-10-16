@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.contentDescription
@@ -64,19 +65,32 @@ fun MapRoundButton(
     }
 }
 
-/** Indicateur de nord. La carte reste toujours orientée au nord (§3.3). */
+/**
+ * Boussole de la carte : la flèche rouge et le « N » montrent toujours où est le nord sur la
+ * carte, qui peut être tournée à deux doigts. Un appui remet le nord en haut.
+ * [bearing] : orientation de la carte en degrés (0 = nord en haut).
+ */
 @Composable
-fun NorthIndicator(modifier: Modifier = Modifier) {
+fun NorthIndicator(bearing: Double, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val panel = LocalPanelColors.current
+    val angle = ((bearing % 360.0) + 360.0) % 360.0
+    val northUp = angle < 0.5 || angle > 359.5
     Surface(
+        onClick = onClick,
         modifier = modifier
             .size(ButtonSize)
-            .semantics { contentDescription = "Carte orientée vers le nord" },
+            .semantics {
+                contentDescription = if (northUp) "Boussole : nord en haut" else "Boussole : remettre le nord en haut"
+            },
         shape = CircleShape,
         color = panel.container,
         shadowElevation = 4.dp,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Column(
+            modifier = Modifier.graphicsLayer { rotationZ = -bearing.toFloat() },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
             Canvas(Modifier.size(width = 12.dp, height = 10.dp)) {
                 val path = Path().apply {
                     moveTo(size.width / 2, 0f)
