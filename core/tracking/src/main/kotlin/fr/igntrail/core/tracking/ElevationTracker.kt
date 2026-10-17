@@ -113,7 +113,12 @@ class ElevationTracker(
     }
 
     companion object {
-        private const val BARO_WINDOW = 5
+        /**
+         * Moyenne glissante sur 20 s de l'altitude barométrique. Téléphone en poche, la
+         * pression « respire » (bruit de 3 à 4 m) : sur 5 s, une marche à plat donnait
+         * 522 m de D+ ; sur 20 s, 15 m, en gardant 80 % d'une vraie bosse de 10 m.
+         */
+        private const val BARO_WINDOW = 20
 
         /** Altitude de l'atmosphère standard (formule internationale du nivellement barométrique). */
         fun pressureToAltitude(hpa: Double): Double = 44_330.0 * (1.0 - (hpa / 1_013.25).pow(0.190_295))

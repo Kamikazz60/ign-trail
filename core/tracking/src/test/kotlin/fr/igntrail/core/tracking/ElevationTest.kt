@@ -99,4 +99,30 @@ class ElevationTest {
         assertEquals(0.0, ElevationTracker.pressureToAltitude(1013.25), 0.01)
         assertEquals(1000.0, ElevationTracker.pressureToAltitude(pressure(1000.0)), 0.01)
     }
+
+    /** Altitude (m) → pression (hPa), inverse de [ElevationTracker.pressureToAltitude]. */
+    private fun pressureAt(altitudeM: Double): Float =
+        (1_013.25 * Math.pow(1.0 - altitudeM / 44_330.0, 1.0 / 0.190_295)).toFloat()
+
+    @Test
+    fun `baromètre bruité en poche, marche à plat - pas de dénivelé fantôme (retour terrain)`() {
+        // 45 min à plat, bruit de 3,6 m (pression qui « respire » dans la poche).
+        val random = java.util.Random(9)
+        val e = ElevationTracker(8.0, 20f)
+        repeat(2_700) { e.add(35.0, 3f, counting = true, pressureHpa = pressureAt(35.0 + random.nextGaussian() * 3.6)) }
+        assertTrue("D+ ${e.gain}", e.gain < 25.0)
+        assertTrue("D- ${e.loss}", e.loss < 25.0)
+    }
+
+    @Test
+    fun `baromètre bruité - une vraie montée de 40 m reste comptée`() {
+        val random = java.util.Random(4)
+        val e = ElevationTracker(8.0, 20f)
+        repeat(600) { i ->
+            val alt = 35.0 + 40.0 * i / 600.0
+            e.add(alt, 3f, counting = true, pressureHpa = pressureAt(alt + random.nextGaussian() * 3.6))
+        }
+        repeat(120) { e.add(75.0, 3f, counting = true, pressureHpa = pressureAt(75.0 + random.nextGaussian() * 3.6)) }
+        assertEquals(40.0, e.gain, 8.0)
+    }
 }

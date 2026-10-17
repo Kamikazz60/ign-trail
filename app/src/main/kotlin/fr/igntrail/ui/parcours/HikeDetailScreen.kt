@@ -122,7 +122,11 @@ fun HikeDetailScreen(
         val end = summary.endTime ?: recorder.lastDataMillis
         val segments = recorder.timedSegments()
         val colors = OutingColors.forSession(summary, recorder, end, container.trackRepository)
-        value = HikeData(summary, recorder.stats(end), segments, TrackProfile.of(segments), colors)
+        val stats = recorder.stats(end)
+        // Statistiques recalculées avec les règles actuelles (dénivelé, vitesse max…) :
+        // la liste et le tableau de bord affichent ensuite les mêmes valeurs que la fiche.
+        if (summary.endTime != null) container.trackRepository.saveStats(sessionId, stats, finished = true, endTime = summary.endTime)
+        value = HikeData(summary, stats, segments, TrackProfile.of(segments), colors)
     }
     val poisFlow = remember(sessionId) { container.poiRepository.forSession(sessionId) }
     val pois by poisFlow.collectAsStateWithLifecycle(initialValue = emptyList())

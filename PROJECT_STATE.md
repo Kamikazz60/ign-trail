@@ -1,6 +1,6 @@
 # PROJECT_STATE — IGN Trail
 
-Dernière mise à jour : 16/10/2026 (version 1.0.4, à valider sur téléphone)
+Dernière mise à jour : 17/10/2026 (version 1.0.5, à valider sur téléphone)
 
 ## Avancement
 
@@ -386,3 +386,20 @@ Décision de l'utilisateur (16/10/2026), qui remplace le « nord toujours en hau
 
 Vérifié sur émulateur : boussole affichée (« nord en haut »), appui sans erreur, carte et position GPS OK. La
 rotation à deux doigts n'est pas testable sur l'émulateur (un seul doigt simulé) : à vérifier sur téléphone.
+
+## Dénivelé fantôme en marche (version 1.0.5, `apk/IGN-Trail-1.0.5.apk`, à valider sur téléphone)
+
+Retour terrain du 17/10/2026 : marche quasi à plat (GPS : 27 à 46 m d'altitude), 522 m de D+ et 519 m de D-.
+Mesures brutes : altitude barométrique avec un bruit de 3,6 m téléphone en poche (pression qui « respire »),
+contre 1,6 à 2,5 m en voiture et à vélo. Lissage de 5 s + seuil de 3 m : chaque oscillation comptée.
+
+Simulation sur les données réelles (D+ marche / voiture / vélo) : 5 s → 517 / 131 / 117 m ; 20 s → 15 / 129 / 92 m ;
+30 s → 6 / 124 / 82 m. Sur une marche synthétique à bosses de 10 m, 20 s garde 80 % du vrai dénivelé.
+
+Corrections :
+- Baromètre lu à 10 mesures/s et moyenné par seconde (`Barometer`) : bruit réduit à la source.
+- Lissage de l'altitude barométrique sur 20 s au lieu de 5 s (`ElevationTracker`), seuil inchangé (3 m).
+- La fiche d'une sortie enregistre les statistiques recalculées : la liste et le tableau de bord se mettent à jour
+  (les sorties passées sont corrigées à l'ouverture de leur fiche).
+
+2 tests ajoutés ; 129 tests, 0 échec.

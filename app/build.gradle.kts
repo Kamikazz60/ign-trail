@@ -11,8 +11,8 @@ android {
         applicationId = "fr.igntrail"
         minSdk = 29
         targetSdk = 36
-        versionCode = 16
-        versionName = "1.0.4"
+        versionCode = 17
+        versionName = "1.0.5"
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
     }
 
